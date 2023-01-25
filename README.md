@@ -16,7 +16,7 @@ Dicom-vert converts dicom datasets to image datasets with given image compressio
 # How to use
 1- Clone the repository to your local environment
 ```bash
-git clone git@github.com:denizcelik/dicom-image-converter.git
+git clone https://github.com/denizcelik/dicom-to-image-converter.git
 ```
 2- Install required python packages by using requirement.txt file
 ```bash
