@@ -8,11 +8,17 @@ from copy import deepcopy
 
 
 class DConverter:
-    def __init__(self, path_dataset, format_img="PNG", ext_dicom=".dcm") -> None:
+    def __init__(
+        self, path_dataset, format_img="PNG", recursive=False, ext_dicom=".dcm"
+    ) -> None:
+
+        if not Path(path_dataset).is_dir():
+            raise NotADirectoryError("Given path is not a directory")
 
         self.path_dicom_dataset = path_dataset
         self.format_img = format_img
         self.ext_dicom = ext_dicom
+        self.recursive = recursive
         self.list_dicom_paths, self.num_dicom_paths = self.extract_dicom_paths()
 
     def extract_dicom_paths(self):
@@ -20,7 +26,11 @@ class DConverter:
         # read paths
         path_dicom_files = Path(self.path_dicom_dataset)
         # get a list of paths
-        list_dicom_paths = list(path_dicom_files.glob(f"*{self.ext_dicom}"))
+        glob_str = f"*{self.ext_dicom}"
+        if self.recursive:
+            glob_str = "**/" + glob_str
+        print("Glob String:", glob_str)
+        list_dicom_paths = list(path_dicom_files.glob(glob_str))
         # extract number info.
         num_dicom_paths = len(list_dicom_paths)
         print("[INFO] Number of DICOM paths:", num_dicom_paths)
@@ -77,18 +87,22 @@ class DConverter:
     def convert_dicoms_to_images(self):
 
         # iterate over dicom file paths
-        for ind, path in enumerate(self.list_dicom_paths):
+        for ind, path_dicom_current in enumerate(self.list_dicom_paths):
 
             # print information log
             print("[INFO] Image index:", ind)
-            # define current dicom path
-            path_dicom_current = path
+            if self.recursive:
+                print(
+                    f"[INFO] Image dir.: {path_dicom_current.parent.parts[-1]} - Image name: {path_dicom_current.name.replace('.dcm', '')}"
+                )
+
             # read dicom file
             dicom_current = dcmread(path_dicom_current)
             # convert, scale and cast the image
             img_final = self.scale_pixels(dicom_current)
             # save converted image to defined path
             self.save_converted_image(img_final, path_dicom_current)
+            print("")
 
     def save_converted_image(self, img, path_dicom):
 
@@ -96,13 +110,21 @@ class DConverter:
         if self.format_img == "PNG":
             extension_img = ".png"
             configurations = None
+        else:
+            raise ValueError(f"Invalid image compression extention: {self.format_img}")
 
         # get name of current dicom file
         name_img_current = path_dicom.name[:-4]
-        print(path_dicom.parent)
         # define saving path for converted image
-        path_img_saving = self.path_images / Path(name_img_current + extension_img)
-        # print defined image path
+        dir_name_add = ""
+        if self.recursive:
+            dir_name_add = Path(path_dicom.parent.parts[-1])
+            path_current_dir = Path(self.path_images) / dir_name_add
+            path_current_dir.mkdir(parents=False, exist_ok=True)
+        path_img_saving = (
+            self.path_images / dir_name_add / Path(name_img_current + extension_img)
+        )
+        # print defined image path & its directory if exist
         print("[INFO] Saved to:", path_img_saving)
         # save the image to defined path
         Image.fromarray(img).save(str(path_img_saving), format=self.format_img)
