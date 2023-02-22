@@ -9,7 +9,12 @@ from copy import deepcopy
 
 class DConverter:
     def __init__(
-        self, path_dataset, format_img="PNG", recursive=False, ext_dicom=".dcm"
+        self,
+        path_dataset,
+        format_img="PNG",
+        recursive=False,
+        ext_dicom=".dcm",
+        resize_dim=None,
     ) -> None:
 
         if not Path(path_dataset).is_dir():
@@ -19,6 +24,7 @@ class DConverter:
         self.format_img = format_img
         self.ext_dicom = ext_dicom
         self.recursive = recursive
+        self.resize_dim = int(resize_dim)
         self.list_dicom_paths, self.num_dicom_paths = self.extract_dicom_paths()
 
     def extract_dicom_paths(self):
@@ -63,6 +69,14 @@ class DConverter:
         # return scaled image
         return dicom_image_rescaled
 
+    def resize_image(self, image, resize_dim=None):
+
+        if resize_dim:
+            image = np.array(
+                Image.fromarray(image).resize((resize_dim, resize_dim))
+            ).astype(np.uint8)
+        return image
+
     def show_dicom_samples(self, list_dicom_paths, num_samples=3):
 
         # create subplot object
@@ -100,8 +114,10 @@ class DConverter:
             dicom_current = dcmread(path_dicom_current)
             # convert, scale and cast the image
             img_final = self.scale_pixels(dicom_current)
+            # resize image if specified
+            img_final_resized = self.resize_image(img_final, self.resize_dim)
             # save converted image to defined path
-            self.save_converted_image(img_final, path_dicom_current)
+            self.save_converted_image(img_final_resized, path_dicom_current)
             print("")
 
     def save_converted_image(self, img, path_dicom):

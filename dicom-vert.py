@@ -19,15 +19,19 @@ if __name__ == "__main__":
 
         # define required arguments
         parser.add_argument("-p", "--path")
-        parser.add_argument("-f", "--format")
+        parser.add_argument("-f", "--format", default="PNG")
         parser.add_argument("-r", "--recursive", action="store_true")
+        parser.add_argument("-x", "--dicomext", default=".dcm")
+        parser.add_argument("-s", "--resize", default=None)
+
         # parse arguments
         args = parser.parse_args()
 
         # call the application to start the process with given arguments
-        converter = app.DConverter(args.path, args.format, args.recursive)
-        print(args.recursive)
-        print(converter.list_dicom_paths)
+        converter = app.DConverter(
+            args.path, args.format, args.recursive, args.dicomext, args.resize
+        )
+
         converter.start_app()
 
     except TypeError as er:
